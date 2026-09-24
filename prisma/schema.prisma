@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  OUT_OF_STOCK
+  ARCHIVED
+}
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  passHash  String
+  role      Role     @default(ADMIN)
+  createdAt DateTime @default(now())
+  audits    AuditLog[]
+  otps      AdminOtp[]
+}
+
+model AdminOtp {
+  id        String   @id @default(cuid())
+  adminId   String
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  codeHash  String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([adminId])
+  @@index([expiresAt])
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  image       String?
+  order       Int       @default(0)
+  active      Boolean   @default(true)
+  products    Product[]
+  createdAt   DateTime  @default(now())
+
+  @@index([slug])
+  @@index([active])
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  sku         String        @unique
+  categoryId  String
+  category    Category      @relation(fields: [categoryId], references: [id])
+  description String?
+  shortDesc   String?
+  fabric      String?
+  colours     String[]
+  sizes       String[]
+  moq         Int           @default(12)
+  wholesalePrice Int?
+  mrp         Int?
+  status      ProductStatus @default(ACTIVE)
+  featured    Boolean       @default(false)
+  newArrival  Boolean       @default(false)
+  showPrice   Boolean       @default(false)
+  views       Int           @default(0)
+  seoTitle    String?
+  seoDesc     String?
+  images      ProductImage[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([slug])
+  @@index([sku])
+  @@index([categoryId])
+  @@index([status])
+  @@index([featured])
+  @@index([createdAt])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  primary   Boolean @default(false)
+  order     Int     @default(0)
+}
+
+model Enquiry {
+  id        String   @id @default(cuid())
+  name      String
+  business  String?
+  phone     String
+  whatsapp  String?
+  email     String?
+  city      String?
+  state     String?
+  productId String?
+  sku       String?
+  quantity  Int?
+  message   String?
+  status    String   @default("New")
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([phone])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  subject   String?
+  message   String
+  status    String   @default("New")
+  createdAt DateTime @default(now())
+
+  @@index([status])
+}
+
+model Quotation {
+  id        String          @id @default(cuid())
+  name      String
+  business  String?
+  phone     String
+  email     String?
+  city      String?
+  message   String?
+  status    String          @default("New")
+  items     QuotationItem[]
+  createdAt DateTime        @default(now())
+
+  @@index([status])
+}
+
+model QuotationItem {
+  id          String    @id @default(cuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  productId   String
+  productName String
+  quantity    Int
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  name      String
+  business  String?
+  phone     String
+  whatsapp  String?
+  email     String?
+  city      String?
+  state     String?
+  source    String?
+  status    String   @default("New")
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([phone])
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  url       String
+  kind      String   @default("image")
+  createdAt DateTime @default(now())
+}
+
+model SiteSettings {
+  id          String @id @default("site")
+  businessName String @default("JMT Garments")
+  phone       String @default("+91 98765 43210")
+  whatsapp    String @default("919876543210")
+  email       String @default("hello@jmtgarments.com")
+  address     String @default("Main Market Road")
+  heroTitle   String @default("Discover Premium Women's Fashion")
+  heroSubtitle String @default("Wholesale fashion collections crafted for modern retailers and boutiques.")
+  heroImage   String @default("")
+  showPrice   Boolean @default(false)
+  otpPhone    String @default("919702493977")
+  otpEmail    String @default("shahidbhaipersonal@gmail.com")
+  instagram   String @default("")
+  facebook    String @default("")
+  youtube     String @default("")
+}
+
+model AuditLog {
+  id        String    @id @default(cuid())
+  adminId   String?
+  admin     AdminUser? @relation(fields: [adminId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  createdAt DateTime  @default(now())
+}

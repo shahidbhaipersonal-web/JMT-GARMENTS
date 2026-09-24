@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+:root {
+  --ink: #1c1216;
+  --cream: #faf6f0;
+  --maroon: #5c1a2e;
+  --maroon-2: #7a2340;
+  --gold: #c9a86a;
+  --muted: #7a6a70;
+  --line: #e9dcc9;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--cream); color: var(--ink); }
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
