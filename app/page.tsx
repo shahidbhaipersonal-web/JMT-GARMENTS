@@ -11,15 +11,11 @@ export default async function Home() {
     if (!featured.length) featured = await prisma.product.findMany({ where: { status: "ACTIVE" }, take: 8, include: { images: true, category: true }, orderBy: { createdAt: "desc" } });
   } catch { /* demo fallback below */ }
 
-  const demo = [
-    { id: "1", name: "Maroon Anarkali Set", slug: "maroon-anarkali-set", sku: "JMT-001", category: "Ethnic Wear", colours: ["Maroon", "Gold"], sizes: ["S", "M", "L", "XL"], moq: 12, wholesalePrice: 1899, showPrice: true, image: "" },
-    { id: "2", name: "Floral Girls Frock", slug: "floral-girls-frock", sku: "JMT-002", category: "Kids Wear", colours: ["Pink"], sizes: ["4Y", "6Y", "8Y"], moq: 24, wholesalePrice: 799, showPrice: true, image: "" }
-  ];
-  const list = featured.length ? featured.map((p: any) => ({
+  const list = featured.map((p: any) => ({
     id: p.id, name: p.name, slug: p.slug, sku: p.sku, category: p.category?.name ?? "",
     colours: p.colours, sizes: p.sizes, moq: p.moq, wholesalePrice: p.wholesalePrice, showPrice: settings?.showPrice || p.showPrice,
     image: p.images?.find((i: any) => i.primary)?.url || p.images?.[0]?.url || ""
-  })) : demo;
+  }));
 
   return (
     <>
@@ -38,9 +34,13 @@ export default async function Home() {
       </section>
       <section className="max-w-7xl mx-auto px-5 pb-4">
         <h2 className="font-serif text-3xl mb-6">Featured Products</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {list.map((p) => <ProductCard key={p.id} p={p} />)}
-        </div>
+        {list.length === 0 ? (
+          <p className="text-gray-500">New catalogue coming soon — send an enquiry for bulk designs.</p>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {list.map((p) => <ProductCard key={p.id} p={p} />)}
+          </div>
+        )}
       </section>
     </>
   );
