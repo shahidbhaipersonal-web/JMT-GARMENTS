@@ -2,3 +2,5 @@ node_modules/
 .next/
 .env
 *.log
+tsconfig.tsbuildinfo
+next-env.d.ts
