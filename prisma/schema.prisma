@@ -199,7 +199,7 @@ model SiteSettings {
   id          String @id @default("site")
   businessName String @default("JMT Garments")
   phone       String @default("+91 98765 43210")
-  whatsapp    String @default("919876543210")
+  whatsapp    String @default("919702493977")
   email       String @default("hello@jmtgarments.com")
   address     String @default("Main Market Road")
   heroTitle   String @default("Discover Premium Women's Fashion")

@@ -30,22 +30,34 @@ export function sanitizeForAI(text: string): string {
 }
 
 const FALLBACKS = [
-  "arre bhai, itna kam? mera boss dukaan band kar dega 😭 ek aur try karo na!",
-  "abe yaar, thoda toh upar aao! tumhare liye special rate laga dunga.",
-  "itne mein toh mera chai-paani bhi nahi nikalta bhai. thoda badhao!",
-  "tum mol-bhav mein pakke khiladi lagte ho! chalo, ek aur offer batao.",
-  "dil mat todo yaar, thoda sa upar aao — deal pakki!",
-  "boss se chhup ke tumhare liye rate ghata raha hu, fayda uthao!",
-  "yeh rate sun ke mera calculator bhi ro pada. ek aur number try karo!",
-  "maan gaye ustaad! par itna neeche nahi ja sakta. thoda upar aao.",
-  "bhai number toh batao, kitne mein chahiye? seedha-seedha bolo!",
-  "gussa mat karo bhai, price pe baat karte hain. ek aur offer do!"
+  "arre bhai, {offer} se neeche? mera boss dukaan band kar dega! thoda upar aao na!",
+  "abe yaar, tum toh pakke khiladi ho! chalo mera counter suno: {offer}. deal karein?",
+  "itne mein toh mera chai-paani bhi nahi nikalta bhai. mera offer hai {offer} — bolo done?",
+  "dil mat todo yaar! {offer} mein le jao, isse kam mein boss ghar bhej dega!",
+  "boss se chhup ke rate ghata raha hu — sirf tumhare liye {offer}! fayda uthao!",
+  "yeh suno: {offer}! isse ek rupaya kam nahi hoga. {left} chance bache hain!",
+  "maan gaye ustaad, mol-bhav mein tez ho! mera aakhri jaisa offer: {offer}!",
+  "tumhare liye special: {offer}! market mein is rate pe koi nahi dega!"
 ];
 
 export function fallbackReply(seed = ""): string {
   let h = 0;
   for (const c of seed) h = (h * 31 + c.charCodeAt(0)) % 997;
   return FALLBACKS[h % FALLBACKS.length];
+}
+
+// Dynamic contextual reply — ALWAYS shows the live counter rate + tries left,
+// so the bot never repeats a dry line and the customer sees numbers every turn.
+export function smartReply(ctx: { userPrice: number | null; currentOffer: number; attemptsLeft: number; userMessage: string }): string {
+  const t = fallbackReply(`${ctx.userMessage}|${ctx.currentOffer}|${ctx.attemptsLeft}`)
+    .replace("{offer}", `₹${ctx.currentOffer}`)
+    .replace("{left}", ctx.attemptsLeft === 1 ? "aakhri 1 chance bacha hai" : `${ctx.attemptsLeft} chance bache hain`);
+  return t;
+}
+
+// Guarantees the reply shows a number — fixes "bot rate nahi dikhata" even when AI returns dry text.
+export function withRate(text: string, currentOffer: number): string {
+  return /\d/.test(text) ? text : `${text} (mera counter: ₹${currentOffer})`;
 }
 
 export function acceptReply(finalPrice: number): string {
@@ -91,7 +103,8 @@ Generate the bot's next reply. End with a question or a nudge to buy.`;
       const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${groqKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "llama-3.3-70b-versatile", max_tokens: 120, temperature: 0.9, messages: [{ role: "system", content: system }] })
+        body: JSON.stringify({ model: "llama-3.3-70b-versatile", max_tokens: 120, temperature: 0.9, messages: [{ role: "system", content: system }] }),
+        signal: AbortSignal.timeout(8000) // fast fail — never keep customer waiting
       });
       const j = await r.json();
       const t = j?.choices?.[0]?.message?.content?.trim();
@@ -100,7 +113,8 @@ Generate the bot's next reply. End with a question or a nudge to buy.`;
       const r = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${openaiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "gpt-4o-mini", max_tokens: 120, temperature: 0.9, messages: [{ role: "system", content: system }] })
+        body: JSON.stringify({ model: "gpt-4o-mini", max_tokens: 120, temperature: 0.9, messages: [{ role: "system", content: system }] }),
+        signal: AbortSignal.timeout(8000) // fast fail — never keep customer waiting
       });
       const j = await r.json();
       const t = j?.choices?.[0]?.message?.content?.trim();

@@ -40,7 +40,7 @@ export function BuyBox({ p }: { p: { id: string; slug: string; name: string; sku
       </div>
       <div className="flex gap-2">
         <button onClick={() => addCart(p, qty)} className="flex-1 bg-[var(--gold)] text-black font-bold py-3 rounded">ADD TO CART</button>
-        <a href={`https://wa.me/919876543210?text=${encodeURIComponent(`Hello, I want ${p.name} (${p.sku}) x ${qty} pcs. Share wholesale price.`)}`} target="_blank" className="flex-1 text-center bg-[var(--maroon)] text-white font-bold py-3 rounded">ENQUIRE NOW</a>
+        <a href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP || "919702493977"}?text=${encodeURIComponent(`Hello, I want ${p.name} (${p.sku}) x ${qty} pcs. Share wholesale price.`)}`} target="_blank" className="flex-1 text-center bg-[var(--maroon)] text-white font-bold py-3 rounded">ENQUIRE NOW</a>
       </div>
       <div className="flex gap-2 items-center text-sm">
         <input value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="Delivery pincode" className="border rounded px-2 py-1.5 w-36" inputMode="numeric" />

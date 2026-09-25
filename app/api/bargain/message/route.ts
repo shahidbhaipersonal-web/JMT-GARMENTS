@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
-import { extractPrice, isAbusive, calculateCounter, aiReply, acceptReply, fallbackReply } from "@/lib/bargain";
+import { extractPrice, isAbusive, calculateCounter, aiReply, acceptReply, smartReply, withRate } from "@/lib/bargain";
 
 // POST /api/bargain/message { session_id, message }
 export async function POST(req: NextRequest) {
@@ -41,6 +41,11 @@ export async function POST(req: NextRequest) {
 
   if (!userPrice) {
     botMsg = "bhai number toh batao, kitne mein chahiye? jaise 700 ya 800!";
+  } else if (userPrice >= currentOffer) {
+    // Customer offered MORE than bot's rate → instant deal at bot's rate. Customer feels they won.
+    finalPrice = currentOffer;
+    canBuy = true;
+    botMsg = `arey wah! ₹${userPrice} toh mere rate se upar hai! imaandaari ka inaam — ₹${currentOffer} pe deal pakki! neeche Buy dabao!`;
   } else if (attempts >= s.maxAttempts || userPrice <= floor) {
     // Attempts over OR user hit/below floor → lock at floor, customer "wins".
     finalPrice = floor;
@@ -51,10 +56,15 @@ export async function POST(req: NextRequest) {
       : acceptReply(floor);
   } else {
     currentOffer = calculateCounter(userPrice, s.currentOffer, floor);
-    botMsg = await aiReply({
+    const left = s.maxAttempts - attempts;
+    // Fast contextual reply first (instant), then try AI for extra wit with 8s cap.
+    botMsg = smartReply({ userPrice, currentOffer, attemptsLeft: left, userMessage: userText });
+    const ai = await aiReply({
       productName: s.product.name, originalPrice: price, floor,
-      currentOffer, attempts, attemptsLeft: s.maxAttempts - attempts, userMessage: userText
+      currentOffer, attempts, attemptsLeft: left, userMessage: userText
     });
+    // Prefer AI only if it mentions a number (rate visible); else keep smart reply.
+    if (/\d/.test(ai) && ai.length < 300) botMsg = withRate(ai, currentOffer);
   }
 
   await prisma.bargainSession.update({ where: { id: s.id }, data: { attempts, currentOffer } });
