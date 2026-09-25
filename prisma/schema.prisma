@@ -81,6 +81,13 @@ model Product {
   rating      Float         @default(4.2)
   ratingCount Int           @default(0)
   soldCount   Int           @default(0)
+  // Bargain Bot fields (floor/cost NEVER sent to frontend)
+  bargainEnabled    Boolean @default(true)
+  floorPrice        Int?
+  costPrice         Int?
+  maxAttempts       Int     @default(4)
+  sessionTimeoutMin Int     @default(5)
+  sessions          BargainSession[]
   seoTitle    String?
   seoDesc     String?
   images      ProductImage[]
@@ -214,4 +221,41 @@ model AuditLog {
   entity    String
   entityId  String?
   createdAt DateTime  @default(now())
+}
+
+enum BargainStatus {
+  active
+  won
+  lost
+  expired
+}
+
+model BargainSession {
+  id           String        @id @default(cuid())
+  productId    String
+  product      Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId       String?
+  attempts     Int           @default(0)
+  maxAttempts  Int           @default(4)
+  currentOffer Int
+  finalPrice   Int?
+  status       BargainStatus @default(active)
+  createdAt    DateTime      @default(now())
+  expiresAt    DateTime
+  messages     BargainMessage[]
+
+  @@index([productId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model BargainMessage {
+  id        String         @id @default(cuid())
+  sessionId String
+  session   BargainSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String // "user" | "bot"
+  message   String
+  createdAt DateTime       @default(now())
+
+  @@index([sessionId])
 }

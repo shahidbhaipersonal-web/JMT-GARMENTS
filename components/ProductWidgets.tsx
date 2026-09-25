@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useStore } from "./StoreContext";
+import BargainModal from "./BargainModal";
 
 export function ProductGallery({ images, name }: { images: string[]; name: string }) {
   const [n, setN] = useState(0);
@@ -23,11 +24,12 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
   );
 }
 
-export function BuyBox({ p }: { p: { id: string; slug: string; name: string; sku: string; image: string; moq: number } }) {
+export function BuyBox({ p }: { p: { id: string; slug: string; name: string; sku: string; image: string; moq: number; price: number; bargainOn: boolean } }) {
   const { addCart } = useStore();
   const [qty, setQty] = useState(p.moq);
   const [pin, setPin] = useState("");
   const [pinMsg, setPinMsg] = useState("");
+  const [bargain, setBargain] = useState(false);
   return (
     <div className="grid gap-3">
       <div className="flex items-center gap-3">
@@ -45,6 +47,10 @@ export function BuyBox({ p }: { p: { id: string; slug: string; name: string; sku
         <button onClick={() => setPinMsg(pin.length === 6 ? `✓ Dispatch to ${pin} in 4–6 days (estimate).` : "6-digit pincode dalo.")} className="underline">Check</button>
       </div>
       {pinMsg && <p className="text-xs text-gray-600">{pinMsg}</p>}
+      {p.bargainOn && (
+        <button onClick={() => setBargain(true)} className="w-full border-2 border-orange-600 text-orange-700 font-bold py-2.5 rounded">🤝 Bargain karo — Mol-Bhav Raja se mol-bhav!</button>
+      )}
+      {bargain && <BargainModal productId={p.id} price={p.price} onClose={() => setBargain(false)} />}
     </div>
   );
 }

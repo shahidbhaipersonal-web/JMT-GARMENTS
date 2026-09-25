@@ -8,6 +8,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin" className="py-2 px-2 rounded hover:bg-white/10">Dashboard</Link>
           <Link href="/admin/products" className="py-2 px-2 rounded hover:bg-white/10">Products</Link>
           <Link href="/admin/enquiries" className="py-2 px-2 rounded hover:bg-white/10">Enquiries</Link>
+          <Link href="/admin/bargains" className="py-2 px-2 rounded hover:bg-white/10">Bargain Bot</Link>
           <Link href="/admin/password" className="py-2 px-2 rounded hover:bg-white/10">Password</Link>
           <Link href="/admin/settings" className="py-2 px-2 rounded hover:bg-white/10">Settings</Link>
           <Link href="/" className="py-2 px-2 rounded hover:bg-white/10 opacity-70">← View Site</Link>

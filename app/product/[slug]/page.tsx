@@ -49,7 +49,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
           </div>
           {showPrice && p.wholesalePrice && <div className="text-green-700 font-bold mb-1">Wholesale: ₹{p.wholesalePrice.toLocaleString("en-IN")} / pc</div>}
           <p className="text-sm text-gray-600 mb-4">{p.shortDesc || p.description}</p>
-          <BuyBox p={{ id: p.id, slug: p.slug, name: p.name, sku: p.sku, image: imgs[0] || "", moq: p.moq }} />
+          <BuyBox p={{ id: p.id, slug: p.slug, name: p.name, sku: p.sku, image: imgs[0] || "", moq: p.moq, price: p.mrp || p.wholesalePrice || 0, bargainOn: p.bargainEnabled }} />
           <ul className="text-xs text-gray-600 grid gap-1 mt-4">
             <li>✓ Factory-direct wholesale • GST invoice available</li>
             <li>✓ 7-day size exchange on defects</li>

@@ -28,3 +28,12 @@ Next.js 14 / React / TypeScript / Tailwind / Framer Motion / Prisma / PostgreSQL
 - Images: store URLs (Cloudinary). Upload endpoint to add with CLOUDINARY_* envs.
 - Prices hidden unless SiteSettings.showPrice or product.showPrice is ON.
 - Enquiry/Contact/Quotation save to DB for admin follow-up.
+
+## Bargain Bot (Mol-Bhav Raja)
+- Chat modal on product pages: `🤝 Bargain karo` button in the buy box.
+- APIs: POST `/api/bargain/start`, `/api/bargain/message`, `/api/bargain/accept`, `/api/bargain/cancel`.
+- Rules: 4 tries default, 5-min sessions, counter = midpoint(user, offer) floored at floor_price.
+- Floor/cost prices NEVER leave the backend (not in any JSON response).
+- AI: set `GROQ_API_KEY` (llama-3.3-70b) or `OPENAI_API_KEY` (gpt-4o-mini) in `.env`. Without keys, 10 witty Hinglish template replies are used.
+- Seed floors: `npx tsx prisma/seed-bargain.ts` (≈62% of MRP).
+- Admin: `/admin/bargains` — sessions, avg discount, conversion %, per-product ON/OFF + floor + tries (SUPER_ADMIN only).
