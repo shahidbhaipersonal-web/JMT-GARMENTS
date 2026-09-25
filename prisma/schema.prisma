@@ -78,6 +78,9 @@ model Product {
   newArrival  Boolean       @default(false)
   showPrice   Boolean       @default(false)
   views       Int           @default(0)
+  rating      Float         @default(4.2)
+  ratingCount Int           @default(0)
+  soldCount   Int           @default(0)
   seoTitle    String?
   seoDesc     String?
   images      ProductImage[]

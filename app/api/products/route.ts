@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
         const show = Boolean(settings?.showPrice || p.showPrice);
         return {
           id: p.id, name: p.name, slug: p.slug, sku: p.sku, category: p.category.name,
-          colours: p.colours, sizes: p.sizes, moq: p.moq,
+          colours: p.colours, sizes: p.sizes, moq: p.moq, mrp: p.mrp,
+          rating: p.rating, ratingCount: p.ratingCount, soldCount: p.soldCount,
           ...(show ? { wholesalePrice: p.wholesalePrice } : {}),
           showPrice: show,
           image: p.images.find((i) => i.primary)?.url || p.images[0]?.url || ""

@@ -1,29 +1,32 @@
 import Link from "next/link";
+import RatingStars from "./RatingStars";
+import WishButton from "./WishButton";
 
 export type CardProduct = {
   id: string; name: string; slug: string; sku: string;
   category: string; colours: string[]; sizes: string[];
   moq: number; wholesalePrice?: number | null; showPrice: boolean;
-  image?: string;
+  image?: string; mrp?: number | null; rating?: number; ratingCount?: number; soldCount?: number;
 };
 
 export default function ProductCard({ p }: { p: CardProduct }) {
-  const wa = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP ?? "919876543210"}?text=${encodeURIComponent(`Hello, I am interested in Product: ${p.name}, SKU: ${p.sku}. Please share wholesale details.`)}`;
   return (
-    <div className="bg-white border border-[var(--line)] rounded-2xl overflow-hidden flex flex-col">
-      <Link href={`/product/${p.slug}`} className="h-64 bg-[#f3dfc9] flex items-center justify-center overflow-hidden">
-        {p.image ? <img src={p.image} alt={p.name} loading="lazy" className="w-full h-full object-cover hover:scale-105 transition" /> : <span className="font-serif text-5xl text-[#7a2340]">{p.name.charAt(0)}</span>}
+    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col hover:shadow-xl transition group">
+      <Link href={`/product/${p.slug}`} className="relative h-64 bg-[#f3ede4] flex items-center justify-center overflow-hidden">
+        {p.image ? <img src={p.image} alt={p.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition duration-300" /> : <span className="font-serif text-5xl text-[#7a2340]">{p.name.charAt(0)}</span>}
+        <span className="absolute top-2 left-2 bg-[var(--maroon)] text-white text-[11px] font-bold px-2 py-0.5 rounded">WHOLESALE</span>
+        <span className="absolute top-2 right-2"><WishButton p={{ id: p.id, slug: p.slug, name: p.name, sku: p.sku, image: p.image || "" }} /></span>
       </Link>
-      <div className="p-4 grid gap-1.5 flex-1">
-        <div className="text-[11px] font-bold uppercase tracking-wider text-[#7a2340]">{p.category}</div>
-        <Link href={`/product/${p.slug}`} className="font-bold">{p.name}</Link>
-        <div className="text-xs text-gray-500">SKU: {p.sku} • MOQ: {p.moq} pcs</div>
-        <div className="text-xs text-gray-500">Sizes: {p.sizes.join(", ")} • Colours: {p.colours.join(", ")}</div>
-        {p.showPrice && p.wholesalePrice ? <div className="font-extrabold">₹{p.wholesalePrice.toLocaleString("en-IN")} <span className="text-xs font-normal">wholesale</span></div> : null}
-        <div className="flex gap-2 mt-2">
-          <Link href={`/product/${p.slug}`} className="flex-1 text-center border border-[var(--maroon)] text-[var(--maroon)] font-bold text-sm py-2 rounded-lg">View Details</Link>
-          <a href={wa} target="_blank" className="flex-1 text-center bg-[var(--maroon)] text-white font-bold text-sm py-2 rounded-lg">Enquire</a>
+      <div className="p-3 grid gap-1 flex-1">
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{p.category}</div>
+        <Link href={`/product/${p.slug}`} className="font-semibold text-[15px] leading-snug hover:text-[var(--maroon)] line-clamp-2">{p.name}</Link>
+        <RatingStars rating={p.rating ?? 4.2} count={p.ratingCount ?? 0} />
+        <div className="flex items-baseline gap-2">
+          {typeof p.mrp === "number" && <span className="font-extrabold text-lg">₹{p.mrp.toLocaleString("en-IN")}</span>}
+          <span className="text-[11px] text-gray-500">MRP • wholesale on enquiry</span>
         </div>
+        <div className="text-xs text-gray-500">MOQ: {p.moq} pcs • {p.sizes.slice(0, 4).join(", ")}{p.sizes.length > 4 ? "+" : ""}</div>
+        {typeof p.soldCount === "number" && p.soldCount > 0 && <div className="text-[11px] text-green-700 font-semibold">{p.soldCount.toLocaleString("en-IN")}+ pcs supplied</div>}
       </div>
     </div>
   );
