@@ -1,3 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 :root {
   --burgundy: #5B1028;
   --burgundy-dark: #3A0B1A;
