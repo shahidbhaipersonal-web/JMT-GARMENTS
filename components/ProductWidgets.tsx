@@ -57,17 +57,33 @@ export function BuyBox({ p }: { p: { id: string; slug: string; name: string; sku
 
 export function ProductTabs({ desc, specs }: { desc: string; specs: [string, string][] }) {
   const [t, setT] = useState(0);
+  const tabs = ["Product Details", "Size Guide", "Shipping & Dispatch", "Exchange Policy"];
   return (
-    <div className="mt-8 bg-white border rounded-lg">
-      <div className="flex border-b text-sm font-bold">
-        {["Description", "Specifications", "Bulk Terms"].map((x, i) => (
-          <button key={x} onClick={() => setT(i)} className={`px-4 py-2.5 ${t === i ? "border-b-2 border-[var(--maroon)] text-[var(--maroon)]" : "text-gray-500"}`}>{x}</button>
+    <div className="mt-8 bg-white border border-[var(--line)] rounded-[16px] overflow-hidden">
+      <div className="flex border-b text-sm font-bold overflow-x-auto">
+        {tabs.map((x, i) => (
+          <button key={x} onClick={() => setT(i)} className={`px-4 py-2.5 whitespace-nowrap ${t === i ? "border-b-2 border-[var(--burgundy)] text-[var(--burgundy)]" : "text-[var(--muted)]"}`}>{x}</button>
         ))}
       </div>
       <div className="p-4 text-sm">
-        {t === 0 && <p>{desc || "Premium wholesale garment from JMT Garments catalogue."}</p>}
-        {t === 1 && <table className="w-full">{specs.map(([k, v]) => <tr key={k} className="border-b"><td className="py-1.5 text-gray-500 w-32">{k}</td><td className="py-1.5 font-medium">{v}</td></tr>)}</table>}
-        {t === 2 && <ul className="list-disc ml-5 grid gap-1 text-gray-700"><li>Wholesale only — no single-piece retail.</li><li>Price confirmed on call/WhatsApp after enquiry.</li><li>7-day size exchange on manufacturing defects.</li><li>Pan-India dispatch via transport or courier.</li></ul>}
+        {t === 0 && (
+          <>
+            <p className="mb-3">{desc || "Premium wholesale garment from JMT Garments catalogue."}</p>
+            <table className="w-full">{specs.map(([k, v]) => <tr key={k} className="border-b last:border-0"><td className="py-1.5 text-[var(--muted)] w-32">{k}</td><td className="py-1.5 font-medium">{v}</td></tr>)}</table>
+          </>
+        )}
+        {t === 1 && (
+          <table className="w-full text-center">
+            <thead><tr className="border-b font-bold"><th className="py-1.5">Size</th><th className="py-1.5">Bust (in)</th><th className="py-1.5">Waist (in)</th><th className="py-1.5">Hip (in)</th></tr></thead>
+            <tbody>
+              {[["S", "34", "28", "36"], ["M", "36", "30", "38"], ["L", "38", "32", "40"], ["XL", "40", "34", "42"], ["XXL", "42", "36", "44"]].map((r) => (
+                <tr key={r[0]} className="border-b last:border-0"><td className="py-1.5 font-bold">{r[0]}</td><td className="py-1.5">{r[1]}</td><td className="py-1.5">{r[2]}</td><td className="py-1.5">{r[3]}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {t === 2 && <ul className="list-disc ml-5 grid gap-1 text-gray-700"><li>Pan-India dispatch via transport or courier in 4–6 working days.</li><li>Freight charged extra at actuals or to-pay basis.</li><li>Bulk orders packed bale-wise with packing list + GST invoice.</li></ul>}
+        {t === 3 && <ul className="list-disc ml-5 grid gap-1 text-gray-700"><li>Size exchange within 7 days on manufacturing defects.</li><li>Share unboxing video + photos on WhatsApp for claims.</li><li>Wholesale lots are non-returnable except defects.</li></ul>}
       </div>
     </div>
   );

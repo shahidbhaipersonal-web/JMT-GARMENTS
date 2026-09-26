@@ -14,7 +14,7 @@ export default async function AdminBargains({ searchParams }: { searchParams: { 
   try {
     const [all, prods] = await Promise.all([
       prisma.bargainSession.findMany({ orderBy: { createdAt: "desc" }, take: 100, include: { product: true } }),
-      prisma.product.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, sku: true, mrp: true, bargainEnabled: true, floorPrice: true, costPrice: true, maxAttempts: true, sessionTimeoutMin: true } })
+      prisma.product.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, sku: true, mrp: true, bargainEnabled: true, floorPrice: true, costPrice: true, maxAttempts: true, sessionTimeoutMin: true, bestseller: true, featured: true } })
     ]);
     products = prods;
     sessions = f === "all" ? all : all.filter((s) => s.status === f);

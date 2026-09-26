@@ -75,6 +75,7 @@ model Product {
   mrp         Int?
   status      ProductStatus @default(ACTIVE)
   featured    Boolean       @default(false)
+  bestseller  Boolean       @default(false)
   newArrival  Boolean       @default(false)
   showPrice   Boolean       @default(false)
   views       Int           @default(0)

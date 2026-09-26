@@ -2,7 +2,6 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import EnquiryForm from "@/components/EnquiryForm";
-import RatingStars from "@/components/RatingStars";
 import ProductCard from "@/components/ProductCard";
 import { ProductGallery, BuyBox, ProductTabs } from "@/components/ProductWidgets";
 
@@ -38,16 +37,18 @@ export default async function ProductPage({ params }: { params: { slug: string }
       <div className="grid md:grid-cols-2 gap-8">
         <ProductGallery images={imgs} name={p.name} />
         <div>
-          <h1 className="font-bold text-2xl mb-1">{p.name}</h1>
-          <div className="flex items-center gap-2 mb-2">
-            <RatingStars rating={p.rating || 4.2} count={p.ratingCount || 0} />
-            <span className="text-xs text-gray-500">{(p.soldCount || 0).toLocaleString("en-IN")}+ pcs supplied</span>
+          <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-1">{p.category?.name}</div>
+          <h1 className="font-serif text-3xl mb-1">{p.name}</h1>
+          <div className="text-xs text-[var(--muted)] mb-3">Product Code: {p.sku}</div>
+          <div className="bg-[var(--cream)] border border-[var(--line)] rounded-[12px] p-4 mb-4 grid gap-1">
+            <div className="flex justify-between text-sm"><span className="text-[var(--muted)]">MRP</span><span className="font-extrabold text-xl">{p.mrp ? `₹${p.mrp.toLocaleString("en-IN")}` : "—"}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--muted)]">Wholesale Price</span><span className="font-bold">{showPrice && p.wholesalePrice ? `₹${p.wholesalePrice.toLocaleString("en-IN")}` : "Available on enquiry"}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--muted)]">MOQ</span><span className="font-bold">{p.moq} pcs</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--muted)]">Sizes</span><span className="font-bold">{(p.sizes || []).join(", ") || "—"}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--muted)]">Colours</span><span className="font-bold">{(p.colours || []).join(", ") || "—"}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--muted)]">Fabric</span><span className="font-bold">{p.fabric || "—"}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-[var(--muted)]">Availability</span><span className="font-bold text-[var(--success)]">{p.status === "ACTIVE" ? "In Stock" : p.status}</span></div>
           </div>
-          <div className="flex items-baseline gap-2 mb-1">
-            {p.mrp && <span className="text-3xl font-extrabold">₹{p.mrp.toLocaleString("en-IN")}</span>}
-            <span className="text-xs text-gray-500">MRP • final wholesale rate on enquiry</span>
-          </div>
-          {showPrice && p.wholesalePrice && <div className="text-green-700 font-bold mb-1">Wholesale: ₹{p.wholesalePrice.toLocaleString("en-IN")} / pc</div>}
           <p className="text-sm text-gray-600 mb-4">{p.shortDesc || p.description}</p>
           <BuyBox p={{ id: p.id, slug: p.slug, name: p.name, sku: p.sku, image: imgs[0] || "", moq: p.moq, price: p.mrp || p.wholesalePrice || 0, bargainOn: p.bargainEnabled }} />
           <ul className="text-xs text-gray-600 grid gap-1 mt-4">

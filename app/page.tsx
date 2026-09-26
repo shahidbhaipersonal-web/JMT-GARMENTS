@@ -1,6 +1,10 @@
 import Link from "next/link";
-import HeroCarousel from "@/components/HeroCarousel";
+import Hero from "@/components/Hero";
+import TrustStrip from "@/components/TrustStrip";
 import ProductCarousel from "@/components/ProductCarousel";
+import WholesaleCTA from "@/components/WholesaleCTA";
+import HowToOrder from "@/components/HowToOrder";
+import EnquirySection from "@/components/EnquirySection";
 import { CardProduct } from "@/components/ProductCard";
 import { prisma } from "@/lib/db";
 
@@ -14,65 +18,76 @@ function toCard(p: any, showPrice: boolean): CardProduct {
 }
 
 export default async function Home() {
-  let cats: any[] = [], featured: CardProduct[] = [], fresh: CardProduct[] = [], top: CardProduct[] = [];
+  let cats: any[] = [], fresh: CardProduct[] = [], best: CardProduct[] = [];
   try {
     const settings = await prisma.siteSettings.findUnique({ where: { id: "site" } });
     const show = Boolean(settings?.showPrice);
     cats = await prisma.category.findMany({ where: { active: true }, orderBy: { order: "asc" }, include: { _count: { select: { products: true } } } });
     const inc = { images: true, category: true };
-    const f = await prisma.product.findMany({ where: { status: "ACTIVE", featured: true }, take: 10, include: inc, orderBy: { createdAt: "desc" } });
     const n = await prisma.product.findMany({ where: { status: "ACTIVE", newArrival: true }, take: 10, include: inc, orderBy: { createdAt: "desc" } });
-    const t = await prisma.product.findMany({ where: { status: "ACTIVE" }, take: 10, include: inc, orderBy: { soldCount: "desc" } });
-    featured = f.map((p) => toCard(p, show || p.showPrice));
+    const b = await prisma.product.findMany({ where: { status: "ACTIVE", bestseller: true }, take: 10, include: inc, orderBy: { createdAt: "desc" } });
     fresh = n.map((p) => toCard(p, show || p.showPrice));
-    top = t.map((p) => toCard(p, show || p.showPrice));
-  } catch { /* show sections that loaded */ }
+    best = b.map((p) => toCard(p, show || p.showPrice));
+  } catch { /* sections render empty states */ }
 
   return (
     <>
-      <HeroCarousel />
+      <Hero />
+      <TrustStrip />
 
-      <section className="max-w-7xl mx-auto px-4 py-8">
-        <h2 className="font-bold text-2xl mb-1">Shop by Category</h2>
-        <p className="text-sm text-gray-500 mb-4">Dresses, suits, kurtis, lehenga, gowns and more.</p>
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+      <section className="max-w-7xl mx-auto px-4 py-9 md:py-14" aria-label="Shop by category">
+        <div className="flex items-end justify-between mb-1">
+          <h2 className="font-serif text-3xl md:text-4xl">Shop by Category</h2>
+          <Link href="/shop" className="text-sm font-bold text-[var(--burgundy)]">View All →</Link>
+        </div>
+        <p className="text-sm text-[var(--muted)] mb-6">Explore our wholesale fashion collection</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {cats.map((c: any) => (
-            <Link key={c.id} href={`/shop?cat=${c.slug}`} className="bg-white border rounded-lg p-3 text-center hover:shadow-lg transition">
-              <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-[#5c1a2e] to-[#c9a86a] text-white font-serif text-2xl flex items-center justify-center mb-2">{c.name.charAt(0)}</div>
-              <div className="font-semibold text-[13px]">{c.name}</div>
-              <div className="text-[11px] text-gray-500">{c._count?.products ?? 0} items</div>
+            <Link key={c.id} href={`/shop?cat=${c.slug}`} className="group bg-white border border-[var(--line)] rounded-[16px] overflow-hidden hover:shadow-lg transition">
+              <span className="block aspect-[4/5] bg-[#efe6da] overflow-hidden">
+                {c.image ? (
+                  <img src={c.image} alt={`${c.name} wholesale`} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                ) : (
+                  <span className="w-full h-full flex items-center justify-center font-serif text-4xl text-[var(--burgundy)]">{c.name.charAt(0)}</span>
+                )}
+              </span>
+              <span className="block p-3 text-center">
+                <span className="block font-bold text-[15px]">{c.name}</span>
+                <span className="block text-xs text-[var(--muted)]">{c._count?.products ?? 0} Products</span>
+              </span>
             </Link>
           ))}
         </div>
       </section>
 
-      <ProductCarousel title="Best of Ethnic Wear" sub="Retailer-favourite bulk designs" items={featured} />
-
-      <section className="max-w-7xl mx-auto px-4">
-        <div className="grid md:grid-cols-2 gap-4">
-          <Link href="/shop?filter=new" className="rounded-lg bg-gradient-to-r from-[#5c1a2e] to-[#8a2f4d] text-white p-6">
-            <div className="text-xs uppercase tracking-widest opacity-80">New Arrivals</div>
-            <div className="font-serif text-2xl">Fresh designs every month</div>
-            <div className="text-sm mt-1 underline">Shop now →</div>
-          </Link>
-          <Link href="/wholesale" className="rounded-lg bg-gradient-to-r from-[#1f3a5f] to-[#2b5c8a] text-white p-6">
-            <div className="text-xs uppercase tracking-widest opacity-80">Bulk Orders</div>
-            <div className="font-serif text-2xl">MOQ from 6 pcs • Pan-India dispatch</div>
-            <div className="text-sm mt-1 underline">Request quote →</div>
-          </Link>
+      <section aria-label="New arrivals">
+        <div className="max-w-7xl mx-auto px-4 pt-2">
+          <h2 className="font-serif text-3xl md:text-4xl mb-1">New Arrivals</h2>
+          <p className="text-sm text-[var(--muted)]">Fresh designs just landed in the catalogue</p>
         </div>
+        {fresh.length ? (
+          <ProductCarousel title="" items={fresh} />
+        ) : (
+          <p className="max-w-7xl mx-auto px-4 py-6 text-sm text-[var(--muted)]">New designs coming soon.</p>
+        )}
       </section>
 
-      <ProductCarousel title="New Arrivals" sub="Just landed in the catalogue" items={fresh} />
-      <ProductCarousel title="Bestsellers" sub="Most supplied pcs this season" items={top} />
+      <WholesaleCTA />
 
-      <section className="bg-white border-t mt-4">
-        <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          {[["✓ Genuine Products", "Factory-direct catalogue"], ["◉ Bulk Pricing", "Wholesale rates on enquiry"], ["↺ 7-Day Exchange", "Size exchange support"], ["▣ Pan-India Dispatch", "Transport + courier options"]].map(([a, b]) => (
-            <div key={a} className="flex gap-2 items-start"><span className="text-xl">{a.split(" ")[0]}</span><span><b>{a.split(" ").slice(1).join(" ")}</b><br /><span className="text-gray-500 text-xs">{b}</span></span></div>
-          ))}
+      <section aria-label="Bestsellers">
+        <div className="max-w-7xl mx-auto px-4 pt-2">
+          <h2 className="font-serif text-3xl md:text-4xl mb-1">Wholesale Bestsellers</h2>
+          <p className="text-sm text-[var(--muted)]">Popular designs selected by retailers</p>
         </div>
+        {best.length ? (
+          <ProductCarousel title="" items={best} />
+        ) : (
+          <p className="max-w-7xl mx-auto px-4 py-6 text-sm text-[var(--muted)]">Bestsellers updating soon.</p>
+        )}
       </section>
+
+      <HowToOrder />
+      <EnquirySection />
     </>
   );
 }

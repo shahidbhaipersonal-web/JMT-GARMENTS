@@ -1,18 +1,29 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 :root {
-  --ink: #1c1216;
-  --cream: #faf6f0;
-  --maroon: #5c1a2e;
-  --maroon-2: #7a2340;
-  --gold: #c9a86a;
-  --muted: #7a6a70;
-  --line: #e9dcc9;
+  --burgundy: #5B1028;
+  --burgundy-dark: #3A0B1A;
+  --gold: #C89B5B;
+  --gold-light: #E8D2A8;
+  --cream: #FAF7F2;
+  --ink: #211B1D;
+  --muted: #6F686B;
+  --line: #E8E1DC;
+  --success: #218739;
+  --wa: #25D366;
+  /* legacy aliases (older components) */
+  --maroon: #5B1028;
+  --maroon-2: #5B1028;
+  --cream: #FAF7F2;
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--cream); color: var(--ink); }
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.font-serif-d { font-family: var(--font-serif), Georgia, serif; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }

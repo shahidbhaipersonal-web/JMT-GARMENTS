@@ -7,13 +7,20 @@ module.exports = {
         ink: "var(--ink)",
         cream: "var(--cream)",
         maroon: "var(--maroon)",
+        burgundy: "var(--burgundy)",
+        burgundyDark: "var(--burgundy-dark)",
         gold: "var(--gold)",
-        muted: "var(--muted)"
+        goldLight: "var(--gold-light)",
+        muted: "var(--muted)",
+        line: "var(--line)",
+        success: "var(--success)",
+        wa: "var(--wa)"
       },
       fontFamily: {
-        serif: ["Georgia", "serif"],
-        sans: ["Inter", "system-ui", "sans-serif"]
-      }
+        serif: ["var(--font-serif)", "Georgia", "serif"],
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"]
+      },
+      borderRadius: { xl2: "16px" }
     }
   },
   plugins: []

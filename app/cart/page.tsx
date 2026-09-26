@@ -27,7 +27,7 @@ export default function CartPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 grid md:grid-cols-[1fr_320px] gap-6">
       <div>
-        <h1 className="font-bold text-2xl mb-4">Enquiry Cart ({cartCount})</h1>
+        <h1 className="font-bold text-2xl mb-4">Wholesale Enquiry Cart ({cartCount})</h1>
         {cart.length === 0 ? <p className="text-gray-500">Cart khaali hai. <Link href="/shop" className="underline">Shop now →</Link></p> : (
           <div className="grid gap-3">
             {cart.map((i) => (
@@ -51,6 +51,11 @@ export default function CartPage() {
         )}
       </div>
       <div className="bg-white border rounded-lg p-4 h-fit">
+        <h2 className="font-bold mb-2">Selected Products</h2>
+        <div className="text-sm grid gap-1 mb-3">
+          <div className="flex justify-between"><span className="text-[var(--muted)]">Total Products</span><b>{cart.length}</b></div>
+          <div className="flex justify-between"><span className="text-[var(--muted)]">Total Quantity</span><b>{totalQty} pcs</b></div>
+        </div>
         <h2 className="font-bold mb-2">Request Wholesale Quote</h2>
         <p className="text-xs text-gray-500 mb-3">{cart.length} styles • {totalQty} pcs total • price confirmed on call.</p>
         <form onSubmit={submit} className="grid gap-2 text-sm">
