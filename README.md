@@ -34,6 +34,6 @@ Next.js 14 / React / TypeScript / Tailwind / Framer Motion / Prisma / PostgreSQL
 - APIs: POST `/api/bargain/start`, `/api/bargain/message`, `/api/bargain/accept`, `/api/bargain/cancel`.
 - Rules: 4 tries default, 5-min sessions, counter = midpoint(user, offer) floored at floor_price.
 - Floor/cost prices NEVER leave the backend (not in any JSON response).
-- AI: set `GROQ_API_KEY` (llama-3.3-70b) or `OPENAI_API_KEY` (gpt-4o-mini) in `.env`. Without keys, 10 witty Hinglish template replies are used.
+- AI: set `GEMINI_API_KEY` (free, aistudio.google.com) or `GROQ_API_KEY` or `OPENAI_API_KEY` in `.env`. Priority Gemini → Groq → OpenAI → built-in replies. 8-sec cap so replies stay fast; AI only wins if it mentions a number.
 - Seed floors: `npx tsx prisma/seed-bargain.ts` (≈62% of MRP).
 - Admin: `/admin/bargains` — sessions, avg discount, conversion %, per-product ON/OFF + floor + tries (SUPER_ADMIN only).

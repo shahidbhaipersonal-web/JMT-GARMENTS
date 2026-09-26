@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import Link from "next/link";
 import BargainControls from "@/components/BargainControls";
 
 export default async function AdminBargains({ searchParams }: { searchParams: { status?: string } }) {
@@ -9,7 +10,7 @@ export default async function AdminBargains({ searchParams }: { searchParams: { 
   try {
     const [all, prods] = await Promise.all([
       prisma.bargainSession.findMany({ orderBy: { createdAt: "desc" }, take: 100, include: { product: true } }),
-      prisma.product.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, sku: true, mrp: true, bargainEnabled: true, floorPrice: true, maxAttempts: true } })
+      prisma.product.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, sku: true, mrp: true, bargainEnabled: true, floorPrice: true, costPrice: true, maxAttempts: true, sessionTimeoutMin: true } })
     ]);
     products = prods;
     sessions = f === "all" ? all : all.filter((s) => s.status === f);
@@ -47,7 +48,7 @@ export default async function AdminBargains({ searchParams }: { searchParams: { 
       <h2 className="font-bold text-lg mb-2">Per-product settings</h2>
       <div className="bg-white border rounded-xl overflow-auto mb-6">
         <table className="w-full text-sm">
-          <thead><tr className="text-left border-b"><th className="p-2">Product</th><th className="p-2">MRP</th><th className="p-2">Floor</th><th className="p-2">Tries</th><th className="p-2">ON/OFF</th></tr></thead>
+          <thead><tr className="text-left border-b"><th className="p-2">Product</th><th className="p-2">Floor ₹</th><th className="p-2">Cost ₹</th><th className="p-2">Tries / Mins</th><th className="p-2">ON/OFF</th></tr></thead>
           <tbody>
             {products.map((p) => <BargainControls key={p.id} p={p} />)}
             {!products.length && <tr><td className="p-3 text-gray-500" colSpan={5}>No products.</td></tr>}
@@ -67,7 +68,7 @@ export default async function AdminBargains({ searchParams }: { searchParams: { 
           <tbody>
             {sessions.map((s) => (
               <tr key={s.id} className="border-b">
-                <td className="p-2 text-xs">{new Date(s.createdAt).toLocaleString("en-IN")}</td>
+                <td className="p-2 text-xs"><Link href={`/admin/bargains/${s.id}`} className="underline">{new Date(s.createdAt).toLocaleString("en-IN")}</Link></td>
                 <td className="p-2">{s.product?.name}<div className="text-xs text-gray-500">{s.product?.sku}</div></td>
                 <td className="p-2">{s.attempts}/{s.maxAttempts}</td>
                 <td className="p-2">₹{s.currentOffer}</td>

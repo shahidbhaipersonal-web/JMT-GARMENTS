@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
-import { extractPrice, isAbusive, calculateCounter, aiReply, acceptReply, smartReply, withRate } from "@/lib/bargain";
+import { extractPrice, isAbusive, calculateCounter, aiReply, acceptReply, smartReply, withRate, detectIntent, businessReply } from "@/lib/bargain";
 
 // POST /api/bargain/message { session_id, message }
 export async function POST(req: NextRequest) {
@@ -32,15 +32,35 @@ export async function POST(req: NextRequest) {
 
   const attempts = s.attempts + 1;
   const price = s.product.mrp || s.product.wholesalePrice || 0;
-  const floor = s.product.floorPrice ?? Math.round(price * 0.6);
-  const userPrice = extractPrice(userText);
+  const floor = s.product.floorPrice ?? Math.round(price * 0.6); // admin-fixed rate (per product)
+  const userPrice = extractPrice(userText); // user ne kitna bola — pehle ye dekho
   let botMsg: string;
   let canBuy = false;
   let finalPrice: number | null = null;
   let currentOffer = s.currentOffer;
+  let burnAttempt = true;
+
+  // Recent chat — repeat se bachne + AI ko context dene ke liye
+  const recent = await prisma.bargainMessage.findMany({ where: { sessionId: s.id }, orderBy: { createdAt: "desc" }, take: 6 });
+  const lastBot = [...recent].reverse().find((m) => m.role === "bot")?.message;
+  const history = [...recent].reverse().map((m) => `${m.role}: ${m.message}`);
+  let settings: any = null;
+  try { settings = await prisma.siteSettings.findUnique({ where: { id: "site" } }); } catch {}
+  const facts = {
+    productName: s.product.name,
+    fabric: s.product.fabric || "premium",
+    sizes: (s.product.sizes || []).join(", ") || "all sizes",
+    moq: s.product.moq,
+    address: settings?.address || "Main Market Road",
+    phone: settings?.phone || "9702493977",
+    currentOffer
+  };
 
   if (!userPrice) {
-    botMsg = "bhai number toh batao, kitne mein chahiye? jaise 700 ya 800!";
+    // Number nahi — business sawal ka business jawab (attempt kat-ta nahi)
+    burnAttempt = false;
+    const it = detectIntent(userText);
+    botMsg = it ? businessReply(it, facts) : "bhai number toh batao, kitne mein chahiye? jaise 700 ya 800!";
   } else if (userPrice >= currentOffer) {
     // Customer offered MORE than bot's rate → instant deal at bot's rate. Customer feels they won.
     finalPrice = currentOffer;
@@ -58,16 +78,17 @@ export async function POST(req: NextRequest) {
     currentOffer = calculateCounter(userPrice, s.currentOffer, floor);
     const left = s.maxAttempts - attempts;
     // Fast contextual reply first (instant), then try AI for extra wit with 8s cap.
-    botMsg = smartReply({ userPrice, currentOffer, attemptsLeft: left, userMessage: userText });
+    botMsg = smartReply({ userPrice, currentOffer, attemptsLeft: left, userMessage: userText, lastBot });
     const ai = await aiReply({
       productName: s.product.name, originalPrice: price, floor,
-      currentOffer, attempts, attemptsLeft: left, userMessage: userText
+      currentOffer, attempts, attemptsLeft: left, userMessage: userText,
+      history, factsLine: `fabric ${facts.fabric}; sizes ${facts.sizes}; MOQ ${facts.moq} pcs; address ${facts.address}; phone ${facts.phone}`
     });
     // Prefer AI only if it mentions a number (rate visible); else keep smart reply.
     if (/\d/.test(ai) && ai.length < 300) botMsg = withRate(ai, currentOffer);
   }
 
-  await prisma.bargainSession.update({ where: { id: s.id }, data: { attempts, currentOffer } });
+  await prisma.bargainSession.update({ where: { id: s.id }, data: { attempts: burnAttempt ? attempts : s.attempts, currentOffer } });
   await prisma.bargainMessage.create({ data: { sessionId: s.id, role: "bot", message: botMsg } });
 
   return NextResponse.json({
@@ -75,6 +96,6 @@ export async function POST(req: NextRequest) {
     current_offer: currentOffer,
     can_buy: canBuy,
     final_price: finalPrice,
-    attempts_left: Math.max(0, s.maxAttempts - attempts)
+    attempts_left: Math.max(0, s.maxAttempts - (burnAttempt ? attempts : s.attempts))
   });
 }

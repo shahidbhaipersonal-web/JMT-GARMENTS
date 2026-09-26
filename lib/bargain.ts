@@ -35,7 +35,7 @@ const FALLBACKS = [
   "itne mein toh mera chai-paani bhi nahi nikalta bhai. mera offer hai {offer} — bolo done?",
   "dil mat todo yaar! {offer} mein le jao, isse kam mein boss ghar bhej dega!",
   "boss se chhup ke rate ghata raha hu — sirf tumhare liye {offer}! fayda uthao!",
-  "yeh suno: {offer}! isse ek rupaya kam nahi hoga. {left} chance bache hain!",
+  "yeh suno: {offer}! isse ek rupaya kam nahi hoga. {left}!",
   "maan gaye ustaad, mol-bhav mein tez ho! mera aakhri jaisa offer: {offer}!",
   "tumhare liye special: {offer}! market mein is rate pe koi nahi dega!"
 ];
@@ -47,12 +47,52 @@ export function fallbackReply(seed = ""): string {
 }
 
 // Dynamic contextual reply — ALWAYS shows the live counter rate + tries left,
-// so the bot never repeats a dry line and the customer sees numbers every turn.
-export function smartReply(ctx: { userPrice: number | null; currentOffer: number; attemptsLeft: number; userMessage: string }): string {
-  const t = fallbackReply(`${ctx.userMessage}|${ctx.currentOffer}|${ctx.attemptsLeft}`)
-    .replace("{offer}", `₹${ctx.currentOffer}`)
-    .replace("{left}", ctx.attemptsLeft === 1 ? "aakhri 1 chance bacha hai" : `${ctx.attemptsLeft} chance bache hain`);
-  return t;
+// never repeats the previous bot line, so every turn feels fresh.
+export function smartReply(ctx: { userPrice: number | null; currentOffer: number; attemptsLeft: number; userMessage: string; lastBot?: string }): string {
+  const n = FALLBACKS.length;
+  let h = 0;
+  const seed = `${ctx.userMessage}|${ctx.currentOffer}|${ctx.attemptsLeft}`;
+  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) % 997;
+  const leftTxt = ctx.attemptsLeft === 1 ? "aakhri 1 chance bacha hai" : `${ctx.attemptsLeft} chance bache hain`;
+  for (let k = 0; k < n; k++) {
+    const t = FALLBACKS[(h + k) % n].replace("{offer}", `₹${ctx.currentOffer}`).replace("{left}", leftTxt);
+    if (t !== ctx.lastBot) return t;
+  }
+  return FALLBACKS[h % n].replace("{offer}", `₹${ctx.currentOffer}`).replace("{left}", leftTxt);
+}
+
+// Business intents — customer ke sawal ka seedha jawab (product facts ke saath),
+// taaki har sawal pe same dialogue na bole. Attempts sirf asli bid pe kat-te hain.
+export type Intent = "delivery" | "size" | "fabric" | "moq" | "payment" | "location" | "exchange" | "greet" | "thanks";
+
+export function detectIntent(text: string): Intent | null {
+  const t = text.toLowerCase();
+  if (/\b(hi|hello|hey|namaste|namaskar|ram ram|salam|sat sri|good morning|good evening)\b/.test(t) && t.length < 30) return "greet";
+  if (/(shukriya|thank|dhanyavad|bahut badhiya)/.test(t)) return "thanks";
+  if (/(deliver|dispatch|courier|transport|ship|pahuch|kab aayega|kitne din)/.test(t)) return "delivery";
+  if (/(size|saiz|measurement|fit)/.test(t)) return "size";
+  if (/(fabric|kapda|kapde|material|quality|cloth)/.test(t)) return "fabric";
+  if (/(moq|minimum|minimam|kitne piece|kitne pcs|bulk me|wholesale me)/.test(t)) return "moq";
+  if (/(payment|paisa|cod|cash|advance|upi|online|pay)/.test(t)) return "payment";
+  if (/(location|address|dukaan|shop|kahan|kaha|store|market)/.test(t)) return "location";
+  if (/(exchange|return|wapas|warranty|defect|kharab|guarantee)/.test(t)) return "exchange";
+  return null;
+}
+
+export type Facts = { productName: string; fabric: string; sizes: string; moq: number; address: string; phone: string; currentOffer: number };
+
+export function businessReply(intent: Intent, f: Facts): string {
+  switch (intent) {
+    case "delivery": return `bhai ${f.productName} 4-6 din mein dispatch, pan-India transport/courier se! bolo kitne pcs chahiye, rate bhi final kar dete hain?`;
+    case "size": return `isme sizes hain: ${f.sizes}! bolo kaunsa size chahiye, usi hisaab se best rate lagata hu?`;
+    case "fabric": return `yeh ${f.fabric} kapda hai bhai, quality ekdum solid! ab ek number bolo, deal pakki karte hain?`;
+    case "moq": return `minimum ${f.moq} pcs lena padega (wholesale rule hai bhai). kitne pcs ka order hai?`;
+    case "payment": return `wholesale mein advance + dispatch pe balance hota hai, GST bill ke saath! bolo, kitne mein deal lock karun?`;
+    case "location": return `dukaan yahan hai: ${f.address}! aake dekh lo ya online order karo. bolo budget kya hai?`;
+    case "exchange": return `defect nikle toh 7 din mein size exchange pakka, tension mat lo! ab bolo kitne mein deal karein?`;
+    case "greet": return `namaste bhai! Mol-Bhav mein swagat hai! ${f.productName} ke liye apna budget batao.`;
+    case "thanks": return `koi baat nahi bhai, khushi hui! toh bolo, kitne mein lock karun?`;
+  }
 }
 
 // Guarantees the reply shows a number — fixes "bot rate nahi dikhata" even when AI returns dry text.
@@ -64,12 +104,14 @@ export function acceptReply(finalPrice: number): string {
   return `abe yaar, tune toh dil jeet liya! chal ₹${finalPrice} pe lock kar deta hu. neeche wala Buy button dabao!`;
 }
 
-// Calls Groq (llama-3.3-70b) or OpenAI (gpt-4o-mini). Falls back to templates on any failure.
+// Calls Gemini (free) → Groq → OpenAI. Falls back to templates on any failure.
 export async function aiReply(ctx: {
   productName: string; originalPrice: number; floor: number;
   currentOffer: number; attempts: number; attemptsLeft: number; userMessage: string;
+  history?: string[]; factsLine?: string;
 }): Promise<string> {
-  const system = `You are "Mol-Bhav Raja" — a witty, desi, funny Indian shopkeeper bot on an e-commerce website. Your job is to negotiate prices with customers.
+  const convo = (ctx.history || []).slice(-6).join("\n");
+  const system = `You are "Mol-Bhav" — a witty, desi, funny Indian shopkeeper bot on an e-commerce website. Your job is to negotiate prices with customers.
 
 Rules:
 - Speak in Hinglish (Hindi + English mix). Use casual tone.
@@ -93,12 +135,27 @@ Context for this session:
 - Attempts made: ${ctx.attempts}
 - Attempts left: ${ctx.attemptsLeft}
 - User's latest message: ${sanitizeForAI(ctx.userMessage)}
+${ctx.factsLine ? `- Shop facts (use these for delivery/size/fabric/payment/location questions): ${ctx.factsLine}` : ""}
+${convo ? `Recent chat (do NOT repeat your old lines, say something new):\n${convo}` : ""}
 
 Generate the bot's next reply. End with a question or a nudge to buy.`;
 
+  const geminiKey = process.env.GEMINI_API_KEY;
   const groqKey = process.env.GROQ_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
   try {
+    if (geminiKey) {
+      // Gemini 2.0 Flash — free tier (aistudio.google.com se key lo)
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: system }] }], generationConfig: { maxOutputTokens: 120, temperature: 0.9 } }),
+        signal: AbortSignal.timeout(8000) // fast fail — never keep customer waiting
+      });
+      const j = await r.json();
+      const t = j?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || "").join("").trim();
+      if (t) return t;
+    }
     if (groqKey) {
       const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
