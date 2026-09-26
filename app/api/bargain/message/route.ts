@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
-import { extractPrice, isAbusive, calculateCounter, aiReply, acceptReply, smartReply, withRate, detectIntent, businessReply } from "@/lib/bargain";
+import { extractPrice, isAbusive, calculateCounter, aiReply, acceptReply, smartReply, withRate, detectIntent, businessReply, chatFallback } from "@/lib/bargain";
 
 // POST /api/bargain/message { session_id, message }
 export async function POST(req: NextRequest) {
@@ -53,7 +53,8 @@ export async function POST(req: NextRequest) {
     moq: s.product.moq,
     address: settings?.address || "Main Market Road",
     phone: settings?.phone || "9702493977",
-    currentOffer
+    currentOffer,
+    mrp: price
   };
 
   if (!userPrice) {
@@ -67,11 +68,12 @@ export async function POST(req: NextRequest) {
       const ai = await aiReply({
         productName: s.product.name, originalPrice: price, floor,
         currentOffer, attempts: s.attempts, attemptsLeft: s.maxAttempts - s.attempts, userMessage: userText,
-        history, factsLine: `fabric ${facts.fabric}; sizes ${facts.sizes}; MOQ ${facts.moq} pcs; address ${facts.address}; phone ${facts.phone}`
+        history, factsLine: `fabric ${facts.fabric}; sizes ${facts.sizes}; MOQ ${facts.moq} pcs; address ${facts.address}; phone ${facts.phone}`,
+        mode: "chat", seedHint: userText, lastBot
       });
       botMsg = (ai.length >= 20 && ai.length < 300)
         ? ai
-        : "samajh nahi aaya bhai! kuch bhi puchho — delivery, size, fabric — ya seedha budget batao, jaise 700?";
+        : chatFallback(s.product.name, `${userText}|${history.length}`, lastBot);
     }
   } else if (userPrice >= currentOffer) {
     // Customer offered MORE than bot's rate → instant deal at bot's rate. Customer feels they won.
@@ -94,7 +96,8 @@ export async function POST(req: NextRequest) {
     const ai = await aiReply({
       productName: s.product.name, originalPrice: price, floor,
       currentOffer, attempts, attemptsLeft: left, userMessage: userText,
-      history, factsLine: `fabric ${facts.fabric}; sizes ${facts.sizes}; MOQ ${facts.moq} pcs; address ${facts.address}; phone ${facts.phone}`
+      history, factsLine: `fabric ${facts.fabric}; sizes ${facts.sizes}; MOQ ${facts.moq} pcs; address ${facts.address}; phone ${facts.phone}`,
+      mode: "bid", seedHint: userText, lastBot
     });
     // Prefer AI only if it's a proper reply with a number (rate visible); else keep smart reply.
     if (/\d/.test(ai) && ai.length >= 20 && ai.length < 300) botMsg = withRate(ai, currentOffer);

@@ -63,7 +63,7 @@ export function smartReply(ctx: { userPrice: number | null; currentOffer: number
 
 // Business intents — customer ke sawal ka seedha jawab (product facts ke saath),
 // taaki har sawal pe same dialogue na bole. Attempts sirf asli bid pe kat-te hain.
-export type Intent = "delivery" | "size" | "fabric" | "moq" | "payment" | "location" | "exchange" | "greet" | "thanks" | "who";
+export type Intent = "delivery" | "size" | "fabric" | "moq" | "payment" | "location" | "exchange" | "greet" | "thanks" | "who" | "rate" | "discount" | "order" | "stock" | "quality";
 
 export function detectIntent(text: string): Intent | null {
   const t = text.toLowerCase();
@@ -71,6 +71,11 @@ export function detectIntent(text: string): Intent | null {
   if (/\b(hi|hello|hey|namaste|namaskar|ram ram|salam|sat sri|good morning|good evening)\b/.test(t) && t.length < 30) return "greet";
   if (/(shukriya|thank|dhanyavad|bahut badhiya)/.test(t)) return "thanks";
   if (/(deliver|dispatch|courier|transport|ship|pahuch|kab aayega|kitne din)/.test(t)) return "delivery";
+  if (/(discount|sasta|chhut|concession|deal do|offer do)/.test(t)) return "discount";
+  if (/(rate kya|kya rate|price kya|kya price|daam|kimat|cost kya|kitne ka hai|kya kimat)/.test(t)) return "rate";
+  if (/(order kaise|kaise order|buy kaise|kharidna hai|book karna|cart kaise|lena hai)/.test(t)) return "order";
+  if (/(stock mein|available hai|milega kya|in stock|stock hai)/.test(t)) return "stock";
+  if (/(quality kaisi|quality kya|accha hai kya|acha hai kya|badhiya hai|genuine|original hai|tikau|best hai kya)/.test(t)) return "quality";
   if (/(size|saiz|measurement|fit)/.test(t)) return "size";
   if (/(fabric|kapda|kapde|material|quality|cloth)/.test(t)) return "fabric";
   if (/(moq|minimum|minimam|kitne piece|kitne pcs|bulk me|wholesale me)/.test(t)) return "moq";
@@ -80,7 +85,7 @@ export function detectIntent(text: string): Intent | null {
   return null;
 }
 
-export type Facts = { productName: string; fabric: string; sizes: string; moq: number; address: string; phone: string; currentOffer: number };
+export type Facts = { productName: string; fabric: string; sizes: string; moq: number; address: string; phone: string; currentOffer: number; mrp: number };
 
 export function businessReply(intent: Intent, f: Facts): string {
   switch (intent) {
@@ -94,12 +99,38 @@ export function businessReply(intent: Intent, f: Facts): string {
     case "greet": return `namaste bhai! Bargain / Mol-Bhav mein swagat hai! ${f.productName} ke liye apna budget batao.`;
     case "thanks": return `koi baat nahi bhai, khushi hui! toh bolo, kitne mein lock karun?`;
     case "who": return `main Bargain / Mol-Bhav hu bhai — mol-bhav ka ustaad! ${f.productName} chahiye toh budget batao, best rate lagata hu?`;
+    case "rate": return `bhai ${f.productName} ka MRP ₹${f.mrp} hai, mera current offer sirf ₹${f.currentOffer}! bolo kitne mein lock karun?`;
+    case "discount": return `tumhare liye best hi lagaunga! abhi mera offer ₹${f.currentOffer} hai (MRP ₹${f.mrp}). ek number bolo, aur kam karta hu?`;
+    case "order": return `order simple hai bhai: mol-bhav karke rate lock karo, phir green Buy button dabao — WhatsApp pe order pakka! ya seedha ${f.phone} pe message karo?`;
+    case "stock": return `haan bhai full stock hai! minimum ${f.moq} pcs lena padega. kitne pcs chahiye, rate bhi final karte hain?`;
+    case "quality": return `${f.fabric} kapda hai, quality ekdum solid + 7 din exchange guarantee! bolo kitne mein deal karein?`;
   }
 }
 
-// Guarantees the reply shows a number — fixes "bot rate nahi dikhata" even when AI returns dry text.
+// Varied fallbacks for pure chit-chat (non-repeating) — product naam ke saath.
+const CHAT_FALLBACKS = [
+  "arre mast sawal hai bhai! {product} ko dekh ke bol raha hu — budget batao, best rate dunga?",
+  "haha, tumse baat karke maza aaya! ab kaam ki baat — {product} kitne mein lena hai?",
+  "arey tum toh dilchasp bande ho! chalo ab mol-bhav pe aao — budget kya hai?",
+  "sahi puchha bhai! iska jawab toh {product} haath mein leke dunga. pehle rate lock karein?",
+  "wah, kya baat hai! ab ek number bolo, tumhare liye special rate khol deta hu?"
+];
+
+export function chatFallback(productName: string, seed: string, lastBot?: string): string {
+  let h = 0;
+  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) % 997;
+  for (let k = 0; k < CHAT_FALLBACKS.length; k++) {
+    const t = CHAT_FALLBACKS[(h + k) % CHAT_FALLBACKS.length].replace("{product}", productName);
+    if (t !== lastBot) return t;
+  }
+  return CHAT_FALLBACKS[0].replace("{product}", productName);
+}
+
+// Guarantees the CURRENT counter rate is visible — appends it if AI forgot it.
 export function withRate(text: string, currentOffer: number): string {
-  return /\d/.test(text) ? text : `${text} (mera counter: ₹${currentOffer})`;
+  const flat = text.replace(/,/g, "");
+  if (flat.includes(String(currentOffer))) return text;
+  return `${text} (mera counter: ₹${currentOffer})`;
 }
 
 export function acceptReply(finalPrice: number): string {
@@ -111,9 +142,12 @@ export async function aiReply(ctx: {
   productName: string; originalPrice: number; floor: number;
   currentOffer: number; attempts: number; attemptsLeft: number; userMessage: string;
   history?: string[]; factsLine?: string;
+  mode?: "bid" | "chat"; seedHint?: string; lastBot?: string;
 }): Promise<string> {
   const convo = (ctx.history || []).slice(-6).join("\n");
   const system = `You are "Bargain / Mol-Bhav" — a witty, desi, funny Indian shopkeeper bot on an e-commerce website. Your job is to chat with customers and negotiate prices.
+- You know 140+ languages. ALWAYS reply in the SAME language/script the user wrote in.
+- NEVER mix scripts randomly — match the user.
 
 Rules:
 - Speak in Hinglish (Hindi + English mix). Use casual tone.
@@ -147,30 +181,25 @@ Generate the bot's next reply. End with a question or a nudge to buy.`;
   const openaiKey = process.env.OPENAI_API_KEY;
   try {
     if (geminiKey) {
-      // Gemini Flash — free tier (aistudio.google.com se key lo)
+      // Gemini Flash — free tier (aistudio.google.com se key lo). Single fast attempt.
       const call = async (prompt: string): Promise<string> => {
-        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiKey}`, {
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 120, temperature: 0.9 } }),
-          signal: AbortSignal.timeout(5000) // fast fail — never keep customer waiting
+          body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 500, temperature: 0.7 } }),
+          signal: AbortSignal.timeout(8000) // fast fail — never keep customer waiting
         });
         const j = await r.json();
         return j?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || "").join("").trim() || "";
       };
-      let t = await call(system);
-      const good = (s: string) => /\d/.test(s) && s.length >= 20 && s.length < 300;
-      if (!good(t)) {
-        // retry once with a minimal prompt (model kabhi glitch kare toh)
-        t = await call(`Customer bola: "${sanitizeForAI(ctx.userMessage)}". Mera counter rate: ₹${ctx.currentOffer}. Sirf 1 line Hinglish funny reply de jisme ₹${ctx.currentOffer} ho.`);
-      }
-      if (good(t)) return t;
+      const t = await call(system);
+      if (t) return t;
     }
     if (groqKey) {
       const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${groqKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "llama-3.3-70b-versatile", max_tokens: 120, temperature: 0.9, messages: [{ role: "system", content: system }] }),
+        body: JSON.stringify({ model: "llama-3.3-70b-versatile", max_tokens: 120, temperature: 0.7, messages: [{ role: "system", content: system }] }),
         signal: AbortSignal.timeout(8000) // fast fail — never keep customer waiting
       });
       const j = await r.json();
@@ -180,7 +209,7 @@ Generate the bot's next reply. End with a question or a nudge to buy.`;
       const r = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${openaiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "gpt-4o-mini", max_tokens: 120, temperature: 0.9, messages: [{ role: "system", content: system }] }),
+        body: JSON.stringify({ model: "gpt-4o-mini", max_tokens: 120, temperature: 0.7, messages: [{ role: "system", content: system }] }),
         signal: AbortSignal.timeout(8000) // fast fail — never keep customer waiting
       });
       const j = await r.json();
@@ -188,6 +217,9 @@ Generate the bot's next reply. End with a question or a nudge to buy.`;
       if (t) return t;
     }
   } catch { /* fall through to templates */ }
-  // Filled template fallback — placeholders kabhi kacche nahi jayenge.
-  return smartReply({ userPrice: null, currentOffer: ctx.currentOffer, attemptsLeft: Math.max(1, ctx.attemptsLeft), userMessage: ctx.userMessage });
+  // Mode-aware filled fallback — chat me counter-flavor nahi, bid me rate pakka.
+  if (ctx.mode === "chat") {
+    return chatFallback(ctx.productName, `${ctx.seedHint || ctx.userMessage}|${ctx.currentOffer}`, ctx.lastBot);
+  }
+  return smartReply({ userPrice: null, currentOffer: ctx.currentOffer, attemptsLeft: Math.max(1, ctx.attemptsLeft), userMessage: ctx.userMessage, lastBot: ctx.lastBot });
 }

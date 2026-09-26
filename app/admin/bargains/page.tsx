@@ -4,6 +4,7 @@ import BargainControls from "@/components/BargainControls";
 
 export default async function AdminBargains({ searchParams }: { searchParams: { status?: string } }) {
   const f = searchParams.status || "all";
+  const aiLabel = process.env.GEMINI_API_KEY ? "Gemini LIVE" : process.env.GROQ_API_KEY ? "Groq LIVE" : process.env.OPENAI_API_KEY ? "OpenAI LIVE" : "Templates";
   let sessions: any[] = [];
   let products: any[] = [];
   let stats = { total: 0, won: 0, active: 0, lost: 0, expired: 0, avgDiscount: 0, conv: 0 };
@@ -38,7 +39,7 @@ export default async function AdminBargains({ searchParams }: { searchParams: { 
 
   return (
     <div>
-      <h1 className="font-serif text-3xl mb-4">Bargain Bot</h1>
+      <h1 className="font-serif text-3xl mb-4">Bargain Bot <span className={`text-xs font-sans font-bold border rounded-full px-2 py-0.5 align-middle ${aiLabel === "Templates" ? "bg-gray-100" : "bg-green-100 text-green-800"}`}>AI: {aiLabel}</span></h1>
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
         {cards.map(([k, v]) => (
           <div key={k} className="bg-white border rounded-xl p-3"><div className="text-[11px] text-gray-500">{k}</div><div className="text-xl font-extrabold">{v}</div></div>
