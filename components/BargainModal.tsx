@@ -93,7 +93,7 @@ export default function BargainModal({ productId, price, onClose }: { productId:
         <div className="bg-gradient-to-r from-orange-600 to-[var(--maroon)] text-white p-3 flex items-center gap-2">
           <span className="text-3xl">🧔🏽</span>
           <div className="flex-1">
-            <div className="font-bold">Mol-Bhav</div>
+            <div className="font-bold">Bargain / Mol-Bhav</div>
             <div className={`text-xs font-mono ${left < 60 ? "text-red-200 font-bold" : "opacity-90"}`}>⏱ {mm}:{ss}</div>
           </div>
           <button onClick={onClose} className="text-2xl leading-none px-1">×</button>
@@ -103,7 +103,7 @@ export default function BargainModal({ productId, price, onClose }: { productId:
           {msgs.map((m, i) => (
             <div key={i} className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm animate-[fadeIn_.3s] ${m.role === "user" ? "justify-self-end bg-[var(--maroon)] text-white rounded-br-sm" : "justify-self-start bg-white border rounded-bl-sm shadow-sm"}`}>{m.text}</div>
           ))}
-          {typing && <div className="justify-self-start bg-white border rounded-2xl rounded-bl-sm px-3 py-2 text-xs text-gray-500 shadow-sm">Mol-Bhav is typing…</div>}
+          {typing && <div className="justify-self-start bg-white border rounded-2xl rounded-bl-sm px-3 py-2 text-xs text-gray-500 shadow-sm">Bargain / Mol-Bhav is typing…</div>}
           {dead && (
             <div className="justify-self-center bg-red-50 border border-red-200 text-red-800 text-sm rounded-xl px-4 py-3 text-center">
               {dead}<br /><button onClick={restart} className="mt-2 bg-[var(--maroon)] text-white text-xs font-bold px-4 py-1.5 rounded-lg">↻ Restart Bargain</button>

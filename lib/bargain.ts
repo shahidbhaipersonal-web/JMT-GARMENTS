@@ -63,10 +63,11 @@ export function smartReply(ctx: { userPrice: number | null; currentOffer: number
 
 // Business intents — customer ke sawal ka seedha jawab (product facts ke saath),
 // taaki har sawal pe same dialogue na bole. Attempts sirf asli bid pe kat-te hain.
-export type Intent = "delivery" | "size" | "fabric" | "moq" | "payment" | "location" | "exchange" | "greet" | "thanks";
+export type Intent = "delivery" | "size" | "fabric" | "moq" | "payment" | "location" | "exchange" | "greet" | "thanks" | "who";
 
 export function detectIntent(text: string): Intent | null {
   const t = text.toLowerCase();
+  if (/(tum kaun|tu kaun|aap kaun|who are you|tera naam|tumhara naam|tumhara name|your name)/.test(t)) return "who";
   if (/\b(hi|hello|hey|namaste|namaskar|ram ram|salam|sat sri|good morning|good evening)\b/.test(t) && t.length < 30) return "greet";
   if (/(shukriya|thank|dhanyavad|bahut badhiya)/.test(t)) return "thanks";
   if (/(deliver|dispatch|courier|transport|ship|pahuch|kab aayega|kitne din)/.test(t)) return "delivery";
@@ -90,8 +91,9 @@ export function businessReply(intent: Intent, f: Facts): string {
     case "payment": return `wholesale mein advance + dispatch pe balance hota hai, GST bill ke saath! bolo, kitne mein deal lock karun?`;
     case "location": return `dukaan yahan hai: ${f.address}! aake dekh lo ya online order karo. bolo budget kya hai?`;
     case "exchange": return `defect nikle toh 7 din mein size exchange pakka, tension mat lo! ab bolo kitne mein deal karein?`;
-    case "greet": return `namaste bhai! Mol-Bhav mein swagat hai! ${f.productName} ke liye apna budget batao.`;
+    case "greet": return `namaste bhai! Bargain / Mol-Bhav mein swagat hai! ${f.productName} ke liye apna budget batao.`;
     case "thanks": return `koi baat nahi bhai, khushi hui! toh bolo, kitne mein lock karun?`;
+    case "who": return `main Bargain / Mol-Bhav hu bhai — mol-bhav ka ustaad! ${f.productName} chahiye toh budget batao, best rate lagata hu?`;
   }
 }
 
@@ -111,7 +113,7 @@ export async function aiReply(ctx: {
   history?: string[]; factsLine?: string;
 }): Promise<string> {
   const convo = (ctx.history || []).slice(-6).join("\n");
-  const system = `You are "Mol-Bhav" — a witty, desi, funny Indian shopkeeper bot on an e-commerce website. Your job is to negotiate prices with customers.
+  const system = `You are "Bargain / Mol-Bhav" — a witty, desi, funny Indian shopkeeper bot on an e-commerce website. Your job is to chat with customers and negotiate prices.
 
 Rules:
 - Speak in Hinglish (Hindi + English mix). Use casual tone.
@@ -186,5 +188,6 @@ Generate the bot's next reply. End with a question or a nudge to buy.`;
       if (t) return t;
     }
   } catch { /* fall through to templates */ }
-  return fallbackReply(ctx.userMessage);
+  // Filled template fallback — placeholders kabhi kacche nahi jayenge.
+  return smartReply({ userPrice: null, currentOffer: ctx.currentOffer, attemptsLeft: Math.max(1, ctx.attemptsLeft), userMessage: ctx.userMessage });
 }

@@ -57,10 +57,22 @@ export async function POST(req: NextRequest) {
   };
 
   if (!userPrice) {
-    // Number nahi — business sawal ka business jawab (attempt kat-ta nahi)
+    // Number nahi — FULL CHAT MODE: business sawal ka business jawab, baaki AI se
+    // (attempt kat-ta nahi, sirf asli bid pe kat-ta hai)
     burnAttempt = false;
     const it = detectIntent(userText);
-    botMsg = it ? businessReply(it, facts) : "bhai number toh batao, kitne mein chahiye? jaise 700 ya 800!";
+    if (it) {
+      botMsg = businessReply(it, facts);
+    } else {
+      const ai = await aiReply({
+        productName: s.product.name, originalPrice: price, floor,
+        currentOffer, attempts: s.attempts, attemptsLeft: s.maxAttempts - s.attempts, userMessage: userText,
+        history, factsLine: `fabric ${facts.fabric}; sizes ${facts.sizes}; MOQ ${facts.moq} pcs; address ${facts.address}; phone ${facts.phone}`
+      });
+      botMsg = (ai.length >= 20 && ai.length < 300)
+        ? ai
+        : "samajh nahi aaya bhai! kuch bhi puchho — delivery, size, fabric — ya seedha budget batao, jaise 700?";
+    }
   } else if (userPrice >= currentOffer) {
     // Customer offered MORE than bot's rate → instant deal at bot's rate. Customer feels they won.
     finalPrice = currentOffer;
