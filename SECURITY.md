@@ -21,6 +21,8 @@ Follow this on EVERY change. See audit report in chat for rationale.
 
 ## Headers & config
 - [ ] Keep CSP/HSTS in `next.config.mjs`. Test pages after adding external scripts.
+- [ ] `script-src` MUST keep `'unsafe-inline'` until per-request nonces are implemented (Next.js App Router hydration depends on inline flight scripts — removing it silently kills all buttons).
+- [ ] Future: implement CSP nonces via middleware + `x-nonce` for stricter XSS protection.
 - [ ] `poweredByHeader: false` stays. Debug off in prod. Generic error messages.
 
 ## Deps & deploy

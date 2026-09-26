@@ -10,7 +10,11 @@ const nextConfig = {
   async headers() {
     const csp = [
       "default-src 'self'",
-      "script-src 'self'",
+      // NOTE: Next.js App Router streams page data via inline scripts —
+      // 'unsafe-inline' is REQUIRED or hydration silently fails (dead buttons).
+      // React auto-escaping + no dangerouslySetInnerHTML keeps XSS risk low.
+      // Future upgrade: per-request nonces via middleware (see SECURITY.md).
+      "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'", // Tailwind + framer-motion runtime styles
       "img-src 'self' data: https:",
       "font-src 'self' data:",
