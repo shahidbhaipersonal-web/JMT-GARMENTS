@@ -48,7 +48,7 @@ export function BuyBox({ p }: { p: { id: string; slug: string; name: string; sku
       </div>
       {pinMsg && <p className="text-xs text-gray-600">{pinMsg}</p>}
       {p.bargainOn && (
-        <button onClick={() => setBargain(true)} className="w-full border-2 border-orange-600 text-orange-700 font-bold py-2.5 rounded">🤝 Bargain karo — Mol-Bhav Raja se mol-bhav!</button>
+        <button onClick={() => setBargain(true)} className="w-full border-2 border-orange-600 text-orange-700 font-bold py-2.5 rounded">🤝 Bargain / Mol-Bhav</button>
       )}
       {bargain && <BargainModal productId={p.id} price={p.price} onClose={() => setBargain(false)} />}
     </div>

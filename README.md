@@ -29,7 +29,7 @@ Next.js 14 / React / TypeScript / Tailwind / Framer Motion / Prisma / PostgreSQL
 - Prices hidden unless SiteSettings.showPrice or product.showPrice is ON.
 - Enquiry/Contact/Quotation save to DB for admin follow-up.
 
-## Bargain Bot (Mol-Bhav Raja)
+## Bargain Bot (Bargain / Mol-Bhav)
 - Chat modal on product pages: `🤝 Bargain karo` button in the buy box.
 - APIs: POST `/api/bargain/start`, `/api/bargain/message`, `/api/bargain/accept`, `/api/bargain/cancel`.
 - Rules: 4 tries default, 5-min sessions, counter = midpoint(user, offer) floored at floor_price.

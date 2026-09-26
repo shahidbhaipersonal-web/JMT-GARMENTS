@@ -67,7 +67,7 @@ export type Intent = "delivery" | "size" | "fabric" | "moq" | "payment" | "locat
 
 export function detectIntent(text: string): Intent | null {
   const t = text.toLowerCase();
-  if (/(tum kaun|tu kaun|aap kaun|who are you|tera naam|tumhara naam|tumhara name|your name)/.test(t)) return "who";
+  if (/(tum (kaun|kon|koun|ho kaun)|tu (kaun|kon)|aap kaun|who are you|tera naam|tumhara naam|tumhara name|your name|tum ho)/.test(t)) return "who";
   if (/\b(hi|hello|hey|namaste|namaskar|ram ram|salam|sat sri|good morning|good evening)\b/.test(t) && t.length < 30) return "greet";
   if (/(shukriya|thank|dhanyavad|bahut badhiya)/.test(t)) return "thanks";
   if (/(deliver|dispatch|courier|transport|ship|pahuch|kab aayega|kitne din)/.test(t)) return "delivery";
