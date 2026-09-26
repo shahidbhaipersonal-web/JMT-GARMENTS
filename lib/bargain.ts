@@ -145,8 +145,8 @@ Generate the bot's next reply. End with a question or a nudge to buy.`;
   const openaiKey = process.env.OPENAI_API_KEY;
   try {
     if (geminiKey) {
-      // Gemini 2.0 Flash — free tier (aistudio.google.com se key lo)
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
+      // Gemini Flash — free tier (aistudio.google.com se key lo)
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiKey}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: system }] }], generationConfig: { maxOutputTokens: 120, temperature: 0.9 } }),

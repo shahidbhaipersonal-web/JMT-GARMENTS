@@ -84,8 +84,8 @@ export async function POST(req: NextRequest) {
       currentOffer, attempts, attemptsLeft: left, userMessage: userText,
       history, factsLine: `fabric ${facts.fabric}; sizes ${facts.sizes}; MOQ ${facts.moq} pcs; address ${facts.address}; phone ${facts.phone}`
     });
-    // Prefer AI only if it mentions a number (rate visible); else keep smart reply.
-    if (/\d/.test(ai) && ai.length < 300) botMsg = withRate(ai, currentOffer);
+    // Prefer AI only if it's a proper reply with a number (rate visible); else keep smart reply.
+    if (/\d/.test(ai) && ai.length >= 20 && ai.length < 300) botMsg = withRate(ai, currentOffer);
   }
 
   await prisma.bargainSession.update({ where: { id: s.id }, data: { attempts: burnAttempt ? attempts : s.attempts, currentOffer } });
