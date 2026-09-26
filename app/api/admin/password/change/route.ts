@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
-import { getAdmin } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
+import { sameOrigin } from "@/lib/security";
 
 function strong(pw: string): string | null {
   if (pw.length < 10) return "Password min 10 characters.";
@@ -14,8 +15,9 @@ function strong(pw: string): string | null {
 }
 
 export async function POST(req: NextRequest) {
-  const a = await getAdmin();
+  const a = await requireAdmin();
   if (!a) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!sameOrigin(req)) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   const rl = rateLimit(`pwchange:${a.id}:${clientKey(req, "x")}`, 5, 15 * 60 * 1000);
   if (!rl.ok) return NextResponse.json({ error: "Too many attempts. Try later." }, { status: 429 });
 

@@ -14,6 +14,6 @@ export async function POST(req: NextRequest) {
   const finalPrice = Math.max(s.currentOffer, floor);
 
   await prisma.bargainSession.update({ where: { id: s.id }, data: { status: "won", finalPrice } });
-  const wa = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP || "919702493977"}?text=${encodeURIComponent(`Namaste! Bargain deal LOCKED: ${s.product.name} (${s.product.sku}) at ₹${finalPrice}. Session: ${s.id.slice(0, 8)}`)}`;
+  const wa = `https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP || "919702493977"}?text=${encodeURIComponent(`Namaste! Bargain deal LOCKED: ${s.product.name} (${s.product.sku}) at Rs.${finalPrice}. Reply here to confirm your order.`)}`;
   return NextResponse.json({ checkout_url: wa, final_price: finalPrice });
 }

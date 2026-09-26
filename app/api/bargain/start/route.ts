@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
+import { readJson } from "@/lib/security";
 
 // POST /api/bargain/start { product_id } — floor price never leaves backend.
 export async function POST(req: NextRequest) {
   const rl = rateLimit(clientKey(req, "bstart"), 20, 60 * 1000);
   if (!rl.ok) return NextResponse.json({ error: "Too many requests." }, { status: 429 });
-  const { product_id } = await req.json().catch(() => ({}));
+  let j: any = null;
+  try { j = await readJson(req); } catch { return NextResponse.json({ error: "Bad request." }, { status: 400 }); }
+  const { product_id } = j || {};
   if (typeof product_id !== "string" || !product_id) {
     return NextResponse.json({ error: "Invalid product." }, { status: 400 });
   }

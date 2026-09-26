@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
+import { requireAdmin } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function BargainDetail({ params }: { params: { id: string } }) {
+  if (!(await requireAdmin())) redirect("/admin/login");
   let s: any = null;
   try {
     s = await prisma.bargainSession.findUnique({ where: { id: params.id }, include: { product: true, messages: { orderBy: { createdAt: "asc" } } } });

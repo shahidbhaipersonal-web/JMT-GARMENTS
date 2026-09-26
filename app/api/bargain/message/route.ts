@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
+import { readJson } from "@/lib/security";
 import { extractPrice, isAbusive, calculateCounter, aiReply, acceptReply, smartReply, withRate, detectIntent, businessReply, chatFallback } from "@/lib/bargain";
 
 // POST /api/bargain/message { session_id, message }
 export async function POST(req: NextRequest) {
-  const { session_id, message } = await req.json().catch(() => ({}));
-  if (typeof session_id !== "string" || typeof message !== "string" || !message.trim()) {
+  let j: any = null;
+  try { j = await readJson(req); } catch { return NextResponse.json({ error: "Bad request." }, { status: 400 }); }
+  const { session_id, message } = j || {};
+  if (typeof session_id !== "string" || session_id.length > 64 || typeof message !== "string" || !message.trim()) {
     return NextResponse.json({ error: "Invalid input." }, { status: 400 });
   }
   const rl = rateLimit(`bmsg:${session_id}`, 10, 60 * 1000);

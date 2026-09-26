@@ -18,3 +18,12 @@ export function sameOrigin(req: Request): boolean {
   } catch { return false; }
   return false;
 }
+
+// Body-size guard: Next route handlers have no strict default — cap JSON at 100KB.
+export async function readJson(req: Request, maxBytes = 100 * 1024): Promise<any> {
+  const len = Number(req.headers.get("content-length") || 0);
+  if (len > maxBytes) throw new Error("too-large");
+  const text = await req.text();
+  if (text.length > maxBytes) throw new Error("too-large");
+  try { return JSON.parse(text); } catch { return null; }
+}

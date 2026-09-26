@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
+import { redirect } from "next/navigation";
 export default async function AdminEnquiries() {
+  if (!(await requireAdmin())) redirect("/admin/login");
   let items: any[] = [];
   try { items = await prisma.enquiry.findMany({ orderBy: { createdAt: "desc" }, take: 100 }); } catch {}
   return (

@@ -1,8 +1,11 @@
 import { prisma } from "@/lib/db";
 import Link from "next/link";
 import BargainControls from "@/components/BargainControls";
+import { requireAdmin } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function AdminBargains({ searchParams }: { searchParams: { status?: string } }) {
+  if (!(await requireAdmin())) redirect("/admin/login");
   const f = searchParams.status || "all";
   const aiLabel = process.env.GEMINI_API_KEY ? "Gemini LIVE" : process.env.GROQ_API_KEY ? "Groq LIVE" : process.env.OPENAI_API_KEY ? "OpenAI LIVE" : "Templates";
   let sessions: any[] = [];

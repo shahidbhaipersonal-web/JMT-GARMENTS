@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getAdmin } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
+import { sameOrigin } from "@/lib/security";
 
 // PUT /api/admin/products/[id]/bargain — toggle + floor/cost/attempts/timeout (SUPER_ADMIN only)
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const a = await getAdmin();
+  const a = await requireAdmin();
   if (!a) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!sameOrigin(req)) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   if ((a.role as string) !== "SUPER_ADMIN") return NextResponse.json({ error: "Super admin only." }, { status: 403 });
   const b = await req.json().catch(() => ({}));
   const data: any = {};

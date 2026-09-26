@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/db";
 import Link from "next/link";
+import { requireAdmin } from "@/lib/auth";
+import { redirect } from "next/navigation";
 export default async function AdminProducts() {
+  if (!(await requireAdmin())) redirect("/admin/login");
   let items: any[] = [];
   try { items = await prisma.product.findMany({ orderBy: { createdAt: "desc" }, take: 100, include: { category: true } }); } catch {}
   return (

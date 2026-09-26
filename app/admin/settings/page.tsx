@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
+import { redirect } from "next/navigation";
 export default async function AdminSettings() {
+  if (!(await requireAdmin())) redirect("/admin/login");
   let s: any = null;
   try { s = await prisma.siteSettings.findUnique({ where: { id: "site" } }); } catch {}
   return (

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getAdmin } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { productSchema } from "@/lib/validation";
+import { sameOrigin } from "@/lib/security";
 
 export async function POST(req: NextRequest) {
-  const a = await getAdmin();
+  const a = await requireAdmin();
   if (!a) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!sameOrigin(req)) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   const body = await req.json().catch(() => null);
   const parsed = productSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid input" }, { status: 400 });

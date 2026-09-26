@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/auth";
+import { redirect } from "next/navigation";
 export default async function AdminHome() {
+  if (!(await requireAdmin())) redirect("/admin/login");
   let stats = { products: 0, enquiries: 0, messages: 0, quotations: 0 };
   try {
     const [products, enquiries, messages, quotations] = await Promise.all([
