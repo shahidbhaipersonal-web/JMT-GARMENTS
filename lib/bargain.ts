@@ -146,15 +146,23 @@ Generate the bot's next reply. End with a question or a nudge to buy.`;
   try {
     if (geminiKey) {
       // Gemini Flash — free tier (aistudio.google.com se key lo)
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: system }] }], generationConfig: { maxOutputTokens: 120, temperature: 0.9 } }),
-        signal: AbortSignal.timeout(8000) // fast fail — never keep customer waiting
-      });
-      const j = await r.json();
-      const t = j?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || "").join("").trim();
-      if (t) return t;
+      const call = async (prompt: string): Promise<string> => {
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${geminiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 120, temperature: 0.9 } }),
+          signal: AbortSignal.timeout(5000) // fast fail — never keep customer waiting
+        });
+        const j = await r.json();
+        return j?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text || "").join("").trim() || "";
+      };
+      let t = await call(system);
+      const good = (s: string) => /\d/.test(s) && s.length >= 20 && s.length < 300;
+      if (!good(t)) {
+        // retry once with a minimal prompt (model kabhi glitch kare toh)
+        t = await call(`Customer bola: "${sanitizeForAI(ctx.userMessage)}". Mera counter rate: ₹${ctx.currentOffer}. Sirf 1 line Hinglish funny reply de jisme ₹${ctx.currentOffer} ho.`);
+      }
+      if (good(t)) return t;
     }
     if (groqKey) {
       const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
